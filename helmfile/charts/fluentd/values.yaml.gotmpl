@@ -1,0 +1,58 @@
+region: {{ .Values | get "global.region" "region" }}
+vpcId: {{ .Values | get "global.vpcId" "vpcId" }}
+env: {{ .Values | get "global.env" "env" }}
+project: {{ .Values | get "global.project" "project" }}
+limits_cpu: {{ .Values | get "fluentd.limits_cpu" "limits_cpu" }}
+limits_memory: {{ .Values | get "fluentd.limits_memory" "limits_memory" }}
+request_cpu: {{ .Values | get "fluentd.request_cpu" "request_cpu" }}
+request_memory: {{ .Values | get "fluentd.request_memory" "request_memory" }}
+fileConfigs:
+  fluent.conf: |
+    @include containers.conf
+    <match fluent.**>
+      @type null
+    </match>
+  containers.conf: |
+    ## logs from podman
+{{- range .Values.application.modules }}
+  {{ if eq .send_logs_to_cloudwatch "yes" }}
+    <source>
+      @type tail
+      multiline_flush_interval 3s
+      path /var/lib/docker/containers/{{ .name }}/{{ .log_name }}.log
+      pos_file /opt/{{ $.Values.global.project }}-{{ .name }}.log.pos
+      tag {{ .name }}.log.*
+      read_from_head true
+    <parse>
+      @type multiline
+      format_firstline /\d{4}-\d{1,2}-\d{1,2} \d{2}:\d{2}:\d{2}\.\d{3}/  
+      format1 /^(?<message>.*)/ 
+    </parse>
+    </source>
+    <match {{ .name }}.log.**>
+      @type cloudwatch_logs
+      message_keys message
+      log_group_name "{{ $.Values.global.env }}-{{ $.Values.global.project }}-{{ .name }}"
+      log_stream_name {{ .name }}-info
+      auto_create_stream true
+      region "{{ $.Values.global.region }}"
+      <buffer>
+        @type memory
+        chunk_limit_size 8m
+        queued_chunks_limit_size 256
+        flush_thread_count 4
+        flush_interval 10s
+        flush_mode interval
+        retry_max_times 2
+        retry_wait 1s
+        retry_max_interval 10s
+        overflow_action block
+      </buffer>
+      <format>
+        @type single_value
+        message_key message
+        add_newline false
+      </format>
+    </match>
+  {{ end }}
+{{- end }}

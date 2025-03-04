@@ -1,0 +1,5 @@
+clusterName: {{ .Values | get "global.cluster_name" "eks-cluster" }}
+serviceAccount_annotations: 
+{{- range $k, $v := .Values.karpenter.serviceAccount_annotations.lbc }}
+    {{ $k }}: {{ $v }}
+{{- end }}

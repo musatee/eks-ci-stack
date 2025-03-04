@@ -1,0 +1,38 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Values.ingress.alb_public_ingress.name }}
+  namespace: {{ $.Values.ingress.alb_public_ingress.namespace }}
+  annotations:
+    alb.ingress.kubernetes.io/load-balancer-name: "{{ $.Values.env }}-{{ $.Values.project }}-{{ $.Values.ingress.alb_public_ingress.name }}"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/subnets: {{ .Values.ingress.alb_public_ingress.public_subnet1 }}, {{ .Values.ingress.alb_public_ingress.public_subnet2 }}, {{ .Values.ingress.alb_public_ingress.public_subnet3 }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/target-type: instance
+    alb.ingress.kubernetes.io/inbound-cidrs: 0.0.0.0/0
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.ingress.alb_public_ingress.certificate_arn }}
+spec:
+  ingressClassName: alb
+  rules:
+  - host: {{ .Values.env }}-admin.{{ $.Values.dns.ecom.domain_name }}
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: {{ $.Values.modules.admin.name }}
+              port:
+                number: {{ $.Values.modules.admin.servicePort }} 
+  - host: {{ .Values.env }}-product.{{ $.Values.dns.ecom.domain_name }}
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: {{ $.Values.modules.product.name }}
+              port:
+                number: {{ $.Values.modules.product.servicePort }} 

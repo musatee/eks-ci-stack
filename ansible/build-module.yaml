@@ -1,0 +1,8 @@
+---
+- name: Building admin & product module 
+  hosts: localhost
+  connection: local
+  vars_files: 
+  - "./vars/module-variables.yaml" 
+  roles: 
+  - build_app_image

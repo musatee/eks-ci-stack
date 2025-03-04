@@ -1,0 +1,70 @@
+---
+# nodepool for In general SPOT instances
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: {{ .Values.spot.name }}
+spec:
+  template:
+    metadata:
+      labels:
+      {{ range $k, $v := .Values.spot.labels }}
+        {{ $k }}: {{ $v }}
+      {{ end }}
+    spec:
+      requirements:
+      {{- range $v := .Values.spot.requirements }}
+      - key: {{ $v.key | quote }}
+        operator: {{ $v.operator }}
+        values: 
+        {{- range $v := $v.values }}
+        - {{ $v | quote }}
+        {{- end }}
+      {{- end }}
+      nodeClassRef:
+        apiVersion: karpenter.k8s.aws/v1beta1
+        kind: EC2NodeClass
+        name: {{ .Values.spot.nodeClassRef }}
+  limits:
+    cpu: {{ .Values.spot.limits_cpu }}
+    memory: {{ .Values.spot.limits_memory }}
+  disruption:
+  {{- range $k, $v := .Values.spot.disruption }}
+    {{ $k }}: {{ $v }}
+  {{- end }} 
+  weight: {{ .Values.spot.weight }}
+
+---
+# Nodeclass for SPOT instances
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: {{ .Values.spot_nodeclass_name }}
+spec:
+  amiFamily: {{ .Values.nodeclass_amiFamily | quote }}
+  role: {{ .Values.nodeclass_worker_role | quote }}
+  subnetSelectorTerms:
+  {{- range $v := .Values.subnetSelectorTerms }}
+  - id: {{ $v.id }}
+  {{- end }}
+  securityGroupSelectorTerms:
+  {{- range $v := .Values.securityGroupSelectorTerms }}
+  - id: {{ $v.id }}
+  {{- end }}
+  amiSelectorTerms:
+  {{- range $v := .Values.amiSelectorTerms }}
+  - id: {{ $v.id }}
+  {{- end }} 
+  tags:
+  {{- range $k, $v := .Values.nodeclass_tags }}
+    {{ $k }}: {{ $v }} 
+  {{- end }}
+  blockDeviceMappings: 
+  {{- range $v := .Values.nodeclass_ebs }}
+  - deviceName: {{ $v.deviceName }}
+    ebs:
+    {{- range $k, $v := $v.ebs }}
+      {{ $k }}: {{ $v }}
+    {{- end }}
+  {{- end }}
+---

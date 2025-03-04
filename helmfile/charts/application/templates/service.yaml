@@ -1,0 +1,20 @@
+{{- range .Values.modules }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name:  {{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  annotations:
+     alb.ingress.kubernetes.io/healthcheck-path: {{ .health_check_url }}
+spec:
+  ports:
+    - name: {{ .name }}
+      port: {{ .servicePort }}
+      targetPort: {{ .containerPort }}
+      protocol: TCP
+  type: {{ .serviceType }}
+  selector:
+    module:  {{ .name }}
+---
+{{- end }}

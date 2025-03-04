@@ -1,0 +1,8 @@
+apiVersion: v2
+name: application
+version: 0.1.0
+appVersion: "1.0"
+description: Application
+maintainers:
+- email: musa.hstu11@gmail.com
+  name: Musa

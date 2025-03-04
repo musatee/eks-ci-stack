@@ -1,0 +1,134 @@
+environments:
+  uat:
+    values:
+    - env/uat.yaml
+
+templates:
+  default: &default
+    chart: ./charts/{{`{{ .Release.Name }}`}}/{{`{{ .Release.Name }}`}}-{{`{{ .Release.Labels.version }}`}}.tgz
+    missingFileHandler: Warn
+    values:
+    - charts/{{`{{ .Release.Name }}`}}/values.yaml.gotmpl
+  custom: &custom
+    chart: ./charts/{{`{{ .Release.Name }}`}}
+    missingFileHandler: Warn
+    values:
+      - charts/{{`{{ .Release.Name }}`}}/values.yaml.gotmpl
+
+releases:
+- name: karpenter
+  namespace: kube-system
+  installed: true
+  labels:
+    tier: karpenter
+    version: 0.37.0
+  hooks:
+  - events: ["prepare"]
+    showlogs: true
+    command: kubectl
+    args:
+    - 'apply'
+    - '--validate=true'
+    - '--filename=https://raw.githubusercontent.com/aws/karpenter/v0.37.0/pkg/apis/crds/karpenter.sh_nodepools.yaml'
+  - events: ["prepare"]
+    showlogs: true
+    command: kubectl
+    args:
+    - 'apply'
+    - '--validate=true'
+    - '--filename=https://raw.githubusercontent.com/aws/karpenter/v0.37.0/pkg/apis/crds/karpenter.sh_nodeclaims.yaml'
+  - events: ["prepare"]
+    showlogs: true
+    command: kubectl
+    args:
+    - 'apply'
+    - '--validate=true'
+    - '--filename=https://raw.githubusercontent.com/aws/karpenter/v0.37.0/pkg/apis/crds/karpenter.k8s.aws_ec2nodeclasses.yaml'
+  - events: ["prepare"]
+    showlogs: true
+    command: kubectl
+    args:
+    - 'apply'
+    - '--validate=true'
+    - '--filename=charts/pod-priority.yaml'
+  <<: *custom
+  wait: true
+
+- name: knodepool
+  namespace: kube-system
+  installed: true
+  labels:
+    tier: knodepool
+    version: 0.37.0
+  <<: *custom
+  wait: true
+  needs:
+  - kube-system/karpenter
+
+
+- name: aws-load-balancer-controller
+  installed: true
+  namespace: kube-system
+  labels:
+    tier: controller
+    version: v2.8.1
+  hooks:
+  - events: ["prepare"]
+    showlogs: true
+    command: kubectl
+    args:
+    - 'apply'
+    - '--validate=true'
+    - '-k=github.com/aws/eks-charts/stable/aws-load-balancer-controller/crds?ref=master'
+  <<: *custom
+  wait: true
+  needs:
+  - kube-system/karpenter 
+
+- name: aws-ebs-csi-driver
+  installed: true
+  namespace: kube-system
+  labels:
+    tier: ebs-driver
+    version: 2.35.1
+  <<: *default
+
+- name: mongodb
+  installed: true
+  namespace: default
+  labels:
+    tier: db
+    version: 1.0
+  <<: *custom
+  needs: 
+  - kube-system/aws-ebs-csi-driver
+
+- name: fluentd
+  installed: true
+  namespace: fluentd
+  labels:
+    tier: logging
+    version: 1.3
+  <<: *custom
+  needs:
+    - ecom/application 
+
+- name: external-dns
+  installed: true
+  namespace: kube-system
+  labels:
+    tier: controller
+    version: 6.25.0
+  <<: *default
+
+- name: application
+  installed: true
+  namespace: ecom
+  labels:
+    tier: application
+    version: 0.1.0
+  needs:
+    - kube-system/aws-load-balancer-controller
+    - default/mongodb
+  <<: *custom
+

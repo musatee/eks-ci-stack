@@ -1,0 +1,9 @@
+apiVersion: v2
+name: AWS LoadBalancer Controller
+description: A Helm chart for AWS LBC
+type: application
+version: v2.8.1 
+appVersion: "v2.8.1"
+maintainers:
+- email: musa.hstu11@gmail.com
+  name: Musa

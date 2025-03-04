@@ -1,0 +1,17 @@
+---
+##Common Variables
+aws_account_id: <AWS ACCOUNT ID>
+project_name: ecom
+aws_region: ap-southeast-1
+
+##Image Build
+dockerBuildVars:
+  admin:
+    port: 8000
+    interface: 0.0.0.0
+    app_dir: /app
+
+  product:
+    port: 8000
+    interface: 0.0.0.0
+    app_dir: /app

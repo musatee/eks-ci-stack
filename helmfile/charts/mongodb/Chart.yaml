@@ -1,0 +1,8 @@
+apiVersion: v2
+name: mongodb
+version: "1.0"
+appVersion: "1.0"
+description: mongodb database helm chart
+maintainers:
+- email: musa.hstu11@gmail.com
+  name: Musa

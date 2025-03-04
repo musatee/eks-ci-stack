@@ -1,0 +1,9 @@
+apiVersion: v2
+name: karpenter
+description: A Helm chart for karpenter
+type: application
+version: 0.37.0
+appVersion: "0.37.0"
+maintainers:
+- email: musa.hstu11@gmail.com
+  name: Musa

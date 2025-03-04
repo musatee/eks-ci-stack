@@ -1,0 +1,19 @@
+# -- START of values rendering for karpenter
+cluster_name: {{ .Values.global.cluster_name }} 
+{{- with .Values.karpenter }} 
+interruptionQ: {{ .interruptionQ }}
+serviceAccount_annotations: 
+{{- range $k, $v := .serviceAccount_annotations.karpenter }}
+    {{ $k }}: {{ $v }}
+{{- end }}
+nodeAffinityMatchExpressions: 
+{{- range $v := .nodeAffinityMatchExpressions }}
+    - key: {{ $v.key }}
+      operator: {{ $v.operator }}
+      values: 
+      {{- range $k := $v.values }}
+      - {{ $k }}
+      {{- end }}
+{{- end }}
+{{- end }}
+# -- END of values rendering for karpenter

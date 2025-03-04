@@ -1,0 +1,43 @@
+---
+- name: ECR Login
+  shell: "$(aws ecr get-login --region {{ aws_region }} --no-include-email)"
+  args:
+    executable: /bin/bash
+
+- name: Generate Image Tag
+  shell: git log --format="%H" -n 1
+  args:
+    chdir: "{{ workspace }}/{{ CodeRepo }}"
+  register: code_commit_id
+
+- debug: 
+    var: code_commit_id.stdout_lines
+
+- name: Create Docker Build directory
+  file:
+    path: "{{ workspace }}/ansible_managed_{{ env }}/{{ module }}"
+    state: directory
+    mode: '0755' 
+
+- name: Copy Codebase to Docker build directory
+  copy: 
+    src: "{{ workspace }}/{{ CodeRepo }}/{{ module }}/" 
+    dest: "{{ workspace }}/ansible_managed_{{ env }}/{{ module }}/"
+
+- name: Generate {{ module }} Dockerfile
+  template:
+    src: "{{ dockerfileName }}"
+    dest: "{{ workspace }}/ansible_managed_{{ env }}/{{ module }}/Dockerfile"
+    trim_blocks: yes
+
+- name: Build Docker Image
+  docker_image:
+    build:
+      path: "{{ workspace }}/ansible_managed_{{ env }}/{{ module }}"
+    name: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com/{{ env }}-{{ project_name }}-{{ module }}:local"
+    push: no
+    state: present
+    source: build
+  notify:
+    - Tag Image and Push to ECR [GIT COMMIT HASH]
+    - Tag Image and Push to ECR [LATEST]

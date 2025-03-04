@@ -1,0 +1,186 @@
+global:
+  cluster_name: uat-ecom-eks-cluster
+  region: ap-southeast-1
+  vpcId: vpc-0f66700edf96b5901
+  env: uat
+  project: ecom 
+  aws_account_id: "<AWS ACCOUNT ID>"
+
+dns:
+  ecom:
+    domain_name: kubebyte.xyz
+    #hosted_zone_id: 
+fluentd:
+  limits_cpu: 300m
+  limits_memory: 700Mi
+  request_cpu: 100m
+  request_memory: 400Mi 
+
+application:
+  ingress:
+    alb_public_ingress:
+      name: public-alb
+      namespace: ecom
+      certificate_arn: arn:aws:acm:ap-southeast-1:<AWS ACCOUNT ID>:certificate/edf944aa-a9e1-4add-bf86-13ade90b399c
+      public_subnet1: subnet-0d615d2e1f87c67ea
+      public_subnet2: subnet-01e482588b138aeea
+      public_subnet3: subnet-0e08db87fdcc6ee5d
+  modules:
+    admin:
+      send_logs_to_cloudwatch: "yes"
+      name: admin
+      log_name: admin
+      env: 
+      - name: log_path
+        value: /app/log
+      - name: db_username
+        value: root
+      - name: db_password
+        value: admin@123 
+      - name: db_host
+        value: mongodb.default
+      replicas: 1
+      maxreplicas: 3
+      containerPort: 8000
+      servicePort: 8080
+      serviceType: NodePort
+      logPath: /app/log
+      requests_memory: 256Mi
+      requests_cpu: 256m
+      limit_memory: 500Mi
+      limit_cpu: 500m
+      hpa_averageUtilization: 60
+      livenessProbe_initialDelaySeconds: 15
+      livenessProbe_periodSeconds: 5
+      readinessProbe_initialDelaySeconds: 15
+      readinessProbe_periodSeconds: 5
+      terminationGracePeriodSeconds: 30
+      health_check_url: /admin/healthz
+      commit_hash: latest
+      rollingUpdate_maxSurge: 25%
+      rollingUpdate_maxUnavailable: 50%
+    product:
+      send_logs_to_cloudwatch: "yes"
+      name: product
+      log_name: product
+      env: 
+      - name: log_path
+        value: /app/log
+      - name: db_username
+        value: root
+      - name: db_password
+        value: admin@123 
+      - name: db_host
+        value: mongodb.default 
+      - name: token_url
+        value: https://uat-admin.kubebyte.xyz/admin/login
+      replicas: 1
+      maxreplicas: 3
+      containerPort: 8000
+      servicePort: 8080
+      serviceType: NodePort
+      logPath: /app/log
+      requests_memory: 256Mi
+      requests_cpu: 256m
+      limit_memory: 500Mi
+      limit_cpu: 500m
+      hpa_averageUtilization: 60
+      livenessProbe_initialDelaySeconds: 15
+      livenessProbe_periodSeconds: 5
+      readinessProbe_initialDelaySeconds: 15
+      readinessProbe_periodSeconds: 5
+      terminationGracePeriodSeconds: 30
+      health_check_url: /products/healthz
+      commit_hash: latest
+      rollingUpdate_maxSurge: 25%
+      rollingUpdate_maxUnavailable: 50%
+ 
+karpenter: 
+  interruptionQ: uat-ecom-karpenter-sqs-queue
+  serviceAccount_annotations:
+    karpenter: 
+      eks.amazonaws.com/role-arn: arn:aws:iam::<AWS ACCOUNT ID>:role/uat_ecom_karpenter_controller_EKS
+    lbc: 
+      eks.amazonaws.com/role-arn: arn:aws:iam::<AWS ACCOUNT ID>:role/uat_ecom_AmazonEKSLoadBalancerControllerRole
+  nodeAffinityMatchExpressions: 
+    - key: eks.amazonaws.com/nodegroup
+      operator: In
+      values:
+      - uat-ecom-eks-spot-nodegroup 
+
+nodepool: 
+  spot:
+    name:  nodepool-spot
+    nodeClassRef: nodeclass-spot
+    labels: 
+      Cost-Center: ecom
+    requirements: 
+    - key: "karpenter.k8s.aws/instance-category"
+      operator: In
+      values:
+        - c
+        - m
+        - t
+    - key: "karpenter.k8s.aws/instance-cpu"
+      operator: In
+      values: 
+        - 2
+        - 4
+    - key: "karpenter.k8s.aws/instance-hypervisor"
+      operator: In
+      values: 
+        - nitro
+        - hvm
+    - key: karpenter.k8s.aws/instance-generation
+      operator: Gt
+      values: 
+        - 2
+    - key: "topology.kubernetes.io/zone"
+      operator: In
+      values: 
+        - ap-southeast-1a
+        - ap-southeast-1b
+        - ap-southeast-1c
+    - key: "kubernetes.io/arch"
+      operator: In
+      values: 
+        - amd64
+    - key: "karpenter.sh/capacity-type" # If not included, the webhook for the AWS cloud provider will default to on-demand
+      operator: In
+      values:
+        - spot
+    limits_cpu: "100"
+    limits_memory: 100Gi
+    disruption: 
+      consolidationPolicy: WhenUnderutilized 
+    weight: 100
+
+nodeclass:   
+  spot: 
+    name: nodeclass-spot
+  ondemand: 
+    name: nodeclass-ondemand
+  subnetSelectorTerms: 
+  - id: subnet-0db11f4dd17edc1ca
+  - id: subnet-08391dea180602aaf
+  - id: subnet-066446123b957d950
+  securityGroupSelectorTerms: 
+  - id: sg-03342d94edacfdf27 ## this is the default eks cluster SG which is created automatically if not mentioned. 
+  amiSelectorTerms:
+  - id: ami-0299d0757d37349c7
+  worker_role: uat-ecom-worker
+  amiFamily: Bottlerocket
+  tags: 
+    Cost-Center: ecom
+    Name: uat-ecom-karpenter-node
+  blockDeviceMappings: 
+  - deviceName: /dev/xvda
+    ebs:
+      volumeSize: 4Gi
+      volumeType: gp3
+      encrypted: false
+  - deviceName: /dev/xvdb
+    ebs:
+      volumeSize: 100Gi
+      volumeType: gp3
+      encrypted: false

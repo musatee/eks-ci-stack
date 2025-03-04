@@ -1,0 +1,49 @@
+env: {{ .Values.global.env }}
+aws_account_id: {{ .Values.global.aws_account_id | quote }}
+region: {{ .Values.global.region }}
+project: {{ .Values.global.project }}
+cronjobs:
+  successfulJobsHistoryLimit: 3
+dns:
+  ecom:
+    domain_name: {{ .Values.dns.ecom.domain_name }}
+ingress:
+  alb_public_ingress:
+    name: {{ .Values.application.ingress.alb_public_ingress.name }}
+    namespace: {{ .Values.application.ingress.alb_public_ingress.namespace }}
+    certificate_arn: {{ .Values.application.ingress.alb_public_ingress.certificate_arn }} 
+    public_subnet1: {{ .Values.application.ingress.alb_public_ingress.public_subnet1 }}
+    public_subnet2: {{ .Values.application.ingress.alb_public_ingress.public_subnet2 }}
+    public_subnet3: {{ .Values.application.ingress.alb_public_ingress.public_subnet3 }}
+modules:
+  {{- range $k, $v := .Values.application.modules }}
+  {{ $k }}:
+    send_logs_to_cloudwatch: {{ $v.send_logs_to_cloudwatch }}
+    name: {{ $v.name }}
+    log_name: {{ $v.log_name | quote }}
+    env:
+    {{- range  $v := $v.env }}
+    - name: {{ $v.name }}
+      value: {{ $v.value }}
+    {{- end }}
+    replicas: {{ $v.replicas }}
+    maxreplicas: {{ $v.maxreplicas }}
+    containerPort: {{ $v.containerPort }}
+    servicePort: {{ $v.servicePort }}
+    serviceType: {{ $v.serviceType }}
+    logPath: {{ $v.logPath }}
+    requests_memory: {{ $v.requests_memory }}
+    requests_cpu: {{ $v.requests_cpu }}
+    limit_memory: {{ $v.limit_memory }}
+    limit_cpu: {{ $v.limit_cpu }}
+    hpa_averageUtilization: {{ $v.hpa_averageUtilization }}
+    commit_hash: {{ $v.commit_hash }}
+    livenessProbe_initialDelaySeconds: {{ $v.livenessProbe_initialDelaySeconds }}
+    livenessProbe_periodSeconds: {{ $v.livenessProbe_periodSeconds }}
+    readinessProbe_initialDelaySeconds: {{ $v.readinessProbe_initialDelaySeconds }}
+    readinessProbe_periodSeconds: {{ $v.readinessProbe_periodSeconds }}
+    terminationGracePeriodSeconds: {{ $v.terminationGracePeriodSeconds }}
+    health_check_url: {{ $v.health_check_url }}
+    rollingUpdate_maxSurge: {{ $v.rollingUpdate_maxSurge }}
+    rollingUpdate_maxUnavailable: {{ $v.rollingUpdate_maxUnavailable }}
+  {{- end }}

@@ -1,0 +1,61 @@
+env: {{ .Values.global.env }}
+# -- START of values rendering for spot nodepool
+{{- with .Values.nodepool }}
+spot:
+  name: {{ .spot.name }}
+  nodeClassRef: {{ .spot.nodeClassRef }}
+  labels:
+  {{- range $k,$v := .spot.labels }}
+    {{ $k }}: {{ $v }}
+  {{- end }}
+  requirements:
+  {{- range $v := .spot.requirements }}
+  - key: {{ $v.key | quote }}
+    operator: {{ $v.operator }}
+    values: 
+    {{- range $v := $v.values }}
+      - {{ $v }}
+    {{- end }}
+  {{- end }}
+  limits_cpu: {{ .spot.limits_cpu }}
+  limits_memory: {{ .spot.limits_memory }}
+  disruption: 
+  {{- range $k, $v := .spot.disruption }}
+    {{ $k }}: {{ $v }}
+  {{- end }}
+  weight: {{ .spot.weight }}
+{{- end }}
+# -- END of values rendering for spot nodepool 
+
+# -- START of value rendering for nodeclass
+spot_nodeclass_name:  {{ .Values.nodeclass.spot.name }}
+{{- if eq .Values.global.env "prod" }}
+ondemand_nodeclass_name: {{ .Values.nodeclass.ondemand.name }}
+{{- end }}
+subnetSelectorTerms: 
+{{- range $v := .Values.nodeclass.subnetSelectorTerms }}
+- id: {{ $v.id }}
+{{- end }}
+securityGroupSelectorTerms: 
+{{- range $v := .Values.nodeclass.securityGroupSelectorTerms }}
+- id: {{ $v.id }}
+{{- end }} 
+amiSelectorTerms: 
+{{- range $v := .Values.nodeclass.amiSelectorTerms }}
+- id: {{ $v.id }}
+{{- end }} 
+nodeclass_worker_role: {{ .Values.nodeclass.worker_role }}
+nodeclass_amiFamily: {{ .Values.nodeclass.amiFamily }}
+nodeclass_tags:
+{{- range $k, $v := .Values.nodeclass.tags }}
+  {{ $k }}: {{ $v }}
+{{- end }}
+nodeclass_ebs:
+{{- range $v := .Values.nodeclass.blockDeviceMappings }}
+- deviceName: {{ $v.deviceName }}
+  ebs:
+  {{- range $k, $v := $v.ebs }}
+    {{ $k }}: {{ $v }}
+  {{- end }}
+{{- end }}
+# -- END of value rendering for nodeclass 
