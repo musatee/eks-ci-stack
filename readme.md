@@ -48,7 +48,10 @@ The pipeline automates the following steps:
 - **Stage 5**: Notify Slack about build & deployment status
 
 ## Screenshots
-(Add screenshots of your Jenkins pipeline execution, deployment status, and Kubernetes pods.)
+<img src="images/image1.png" alt="Jenkins Pipeline Execution" width="350">
+<img src="images/image2.png" alt="Jenkins Pipeline Execution" width="350">
+<img src="images/image3.png" alt="Jenkins Pipeline Execution" width="350">
+
 
 ## Setup Instructions
 ### Prerequisites
