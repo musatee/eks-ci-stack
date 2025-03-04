@@ -66,7 +66,7 @@ pipeline {
                     steps{
                         script{
                             if (env.ENVIRONMENT == 'prod'){
-                                IBRNCH = 'master'
+                                IBRNCH = 'main'
                             }
                             if (env.ENVIRONMENT == 'uat'){
                                 IBRNCH = 'develop'
